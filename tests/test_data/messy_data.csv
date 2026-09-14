@@ -1,0 +1,9 @@
+Transaction_ID, Customer Name ,Amount,Discount,Status
+TX-101, John Doe ," ₹1,500.00 ",10%,Completed
+TX-102,Jane Smith,"₹2,450.50",15%,Completed
+TX-103, Bob Wilson ,null,-,Pending
+TX-104,Alice Brown,₹890.00,5%,Failed
+TX-105,Charlie Davis,"₹3,200.00",25%,Completed
+TX-101, John Doe ," ₹1,500.00 ",10%,Completed
+TX-106,NA,₹750.00,N/A,Completed
+TX-107,Eve White,--,0%,Unknown

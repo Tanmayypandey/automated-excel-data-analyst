@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Automated Excel Data Analyst</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <div class="app-wrapper">
+    <!-- Top Navigation Header -->
+    <header class="app-header">
+      <div class="container header-container">
+        <div class="brand">
+          <div class="brand-logo">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+          </div>
+          <span class="brand-title">Automated Excel Data Analyst</span>
+        </div>
+
+        <div class="header-right">
+          <a href="https://github.com" target="_blank" rel="noopener noreferrer" class="btn-github" title="View on GitHub">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"></path>
+            </svg>
+            <span>GitHub</span>
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="container main-content">
+      <!-- Hero Header Section -->
+      <section class="hero-section">
+        <h1 class="hero-title">Turn Raw Data Into Insights</h1>
+        <p class="hero-subtitle">
+          Upload Excel or CSV and get a cleaned, analyzed, dashboard-ready Excel report.
+        </p>
+      </section>
+
+      <!-- Alert / Notification Banner -->
+      <div id="alertBox" class="alert-box hidden" role="alert">
+        <div class="alert-icon" id="alertIcon"></div>
+        <div class="alert-content">
+          <h4 id="alertTitle" class="alert-title">Notification</h4>
+          <p id="alertMessage" class="alert-message"></p>
+        </div>
+        <button id="alertClose" class="alert-close" aria-label="Close notification">&times;</button>
+      </div>
+
+      <!-- Upload Zone Card -->
+      <section class="card upload-card">
+        <div class="upload-zone" id="dropZone">
+          <input type="file" id="fileInput" accept=".xlsx,.csv" class="file-input-hidden" />
+          <div class="upload-icon-wrapper">
+            <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="17 8 12 3 7 8"></polyline>
+              <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+          </div>
+          <h3 class="upload-heading">Drag &amp; Drop File Here</h3>
+          <p class="upload-subtext">XLSX / CSV up to 100 MB</p>
+          <button type="button" class="btn btn-secondary" id="browseBtn">Browse File</button>
+        </div>
+
+        <!-- Selected File Metadata Bar -->
+        <div class="file-details-bar hidden" id="fileDetailsBar">
+          <div class="file-info-group">
+            <span class="file-icon-badge" id="fileTypeBadge">CSV</span>
+            <div class="file-meta">
+              <span class="file-name" id="fileNameLabel">dataset.csv</span>
+              <span class="file-size" id="fileSizeLabel">0 KB</span>
+            </div>
+          </div>
+          <button type="button" class="btn-clear-file" id="clearFileBtn" title="Remove selected file">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Action Row -->
+        <div class="upload-actions">
+          <button type="button" class="btn btn-primary btn-large" id="analyzeBtn" disabled>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+            Analyze Data
+          </button>
+        </div>
+      </section>
+
+      <!-- How It Works Section -->
+      <section class="section-divider-block">
+        <h2 class="block-title">How It Works</h2>
+        <div class="flow-container">
+          <div class="flow-step">
+            <div class="flow-number">1</div>
+            <div class="flow-name">Validate</div>
+            <div class="flow-desc">Checks file integrity, bounds &amp; picks best XLSX sheet</div>
+          </div>
+          <div class="flow-arrow">→</div>
+
+          <div class="flow-step">
+            <div class="flow-number">2</div>
+            <div class="flow-name">Clean</div>
+            <div class="flow-desc">Normalizes types, converts currency &amp; handles missing values</div>
+          </div>
+          <div class="flow-arrow">→</div>
+
+          <div class="flow-step">
+            <div class="flow-number">3</div>
+            <div class="flow-name">Analyze</div>
+            <div class="flow-desc">Detects semantic roles &amp; runs automated statistical EDA</div>
+          </div>
+          <div class="flow-arrow">→</div>
+
+          <div class="flow-step">
+            <div class="flow-number">4</div>
+            <div class="flow-name">Dashboard</div>
+            <div class="flow-desc">Generates executive KPI cards &amp; native Excel charts</div>
+          </div>
+          <div class="flow-arrow">→</div>
+
+          <div class="flow-step">
+            <div class="flow-number">5</div>
+            <div class="flow-name">Download</div>
+            <div class="flow-desc">Exports ready-to-share 5-sheet .xlsx workbook</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Why Use This? Section -->
+      <section class="section-divider-block">
+        <h2 class="block-title">Why Use This?</h2>
+        <div class="why-grid">
+          <div class="why-card">
+            <div class="why-icon-badge blue">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
+            <h3 class="why-title">Smart Cleaning</h3>
+            <p class="why-desc">Standardizes headers, coerces numerics, trims whitespace, protects duration metrics &amp; deduplicates rows.</p>
+          </div>
+
+          <div class="why-card">
+            <div class="why-icon-badge indigo">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            </div>
+            <h3 class="why-title">Auto KPIs</h3>
+            <p class="why-desc">Intelligently selects and formats up to 4 high-value executive metrics (Revenue, Efficiency, Ratings, Volume).</p>
+          </div>
+
+          <div class="why-card">
+            <div class="why-icon-badge green">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
+            </div>
+            <h3 class="why-title">Smart Charts</h3>
+            <p class="why-desc">Recommends diverse, dataset-tailored native Excel charts (Line, Bar, Top-10 Leaderboard, Pie, Scatter, Histogram).</p>
+          </div>
+
+          <div class="why-card">
+            <div class="why-icon-badge amber">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>
+            </div>
+            <h3 class="why-title">Excel Report</h3>
+            <p class="why-desc">Exports an executive 5-sheet workbook with Dashboard, Cleaned Data, Audit Report, Raw Data &amp; Chart Data.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Loading State Overlay / Stepper -->
+      <section class="card loading-card hidden" id="loadingCard">
+        <div class="loading-spinner-wrapper">
+          <div class="spinner"></div>
+        </div>
+        <h3 class="loading-title">Processing &amp; Generating Dashboard</h3>
+        <p class="loading-current-step" id="loadingStepText">Validating file format and size...</p>
+        
+        <div class="stepper-track">
+          <div class="stepper-step active" id="step1">
+            <div class="step-dot">1</div>
+            <span class="step-label">Validate File</span>
+          </div>
+          <div class="stepper-step" id="step2">
+            <div class="step-dot">2</div>
+            <span class="step-label">Clean Data</span>
+          </div>
+          <div class="stepper-step" id="step3">
+            <div class="step-dot">3</div>
+            <span class="step-label">Detect KPIs</span>
+          </div>
+          <div class="stepper-step" id="step4">
+            <div class="step-dot">4</div>
+            <span class="step-label">Select Charts</span>
+          </div>
+          <div class="stepper-step" id="step5">
+            <div class="step-dot">5</div>
+            <span class="step-label">Build Excel</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Results Section -->
+      <section class="results-wrapper hidden" id="resultsSection">
+        <!-- Success Banner & Download Action Header -->
+        <div class="card result-banner-card">
+          <div class="banner-content">
+            <div class="banner-badge-success">Analysis Complete</div>
+            <h3 class="banner-title" id="resultFileTitle">dataset.csv Analysis Summary</h3>
+            <p class="banner-subtext">
+              The dataset was cleaned, profiled, and exported into an executive 5-sheet workbook with embedded native Excel charts.
+            </p>
+            <div class="meta-tags-row">
+              <span class="meta-tag" id="metaFileType">Format: .csv</span>
+              <span class="meta-tag" id="metaSheetName">Sheet: CSV Data</span>
+              <span class="meta-tag" id="metaChartsCount">Charts: 4 Generated</span>
+            </div>
+          </div>
+          <div class="banner-action">
+            <a href="#" class="btn btn-download" id="downloadBtn" target="_blank" download>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              Download Excel Report (.xlsx)
+            </a>
+          </div>
+        </div>
+
+        <!-- 4 KPI Cards Grid -->
+        <div class="section-title-group">
+          <h3 class="section-heading">Key Performance Indicators</h3>
+          <p class="section-desc">Dynamically selected and formatted executive metrics</p>
+        </div>
+        <div class="kpi-grid" id="kpiCardsContainer">
+          <!-- Dynamically Injected KPI Cards -->
+        </div>
+
+        <!-- Dataset Summary & Health Grid -->
+        <div class="section-title-group">
+          <h3 class="section-heading">Dataset Hygiene &amp; Structural Overview</h3>
+          <p class="section-desc">Before and after cleaning comparison</p>
+        </div>
+        <div class="grid-2-col">
+          <div class="card stat-card">
+            <h4 class="card-subtitle">Volume Metrics</h4>
+            <div class="stat-row">
+              <span class="stat-label">Original Records:</span>
+              <span class="stat-value" id="statOrigRows">0</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-label">Cleaned Records:</span>
+              <span class="stat-value" id="statCleanRows">0</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-label">Total Columns:</span>
+              <span class="stat-value" id="statCols">0</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-label">Duplicates Removed:</span>
+              <span class="stat-value text-accent" id="statDupes">0</span>
+            </div>
+          </div>
+
+          <div class="card stat-card">
+            <h4 class="card-subtitle">Data Quality &amp; Hygiene</h4>
+            <div class="stat-row">
+              <span class="stat-label">Missing Values (Before):</span>
+              <span class="stat-value" id="statNullsBefore">0</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-label">Missing Values (After):</span>
+              <span class="stat-value text-accent" id="statNullsAfter">0 (Imputed)</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-label">Preserved Identifier Columns:</span>
+              <span class="stat-value" id="statPreservedIds">None</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-label">Worksheet Structure:</span>
+              <span class="stat-value">5 Verified Sheets</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Charts Overview Section -->
+        <div class="section-title-group">
+          <h3 class="section-heading">Embedded Dashboard Charts</h3>
+          <p class="section-desc">Selected visual insights rendered inside the generated Excel report</p>
+        </div>
+        <div class="charts-grid" id="chartsContainer">
+          <!-- Dynamically Injected Chart Cards -->
+        </div>
+
+        <!-- Cleaning Actions Log Section -->
+        <div class="section-title-group">
+          <h3 class="section-heading">Transformation Audit Log</h3>
+          <p class="section-desc">Complete record of data transformations and type conversions</p>
+        </div>
+        <div class="card audit-card">
+          <ul class="audit-list" id="auditList">
+            <!-- Dynamically Injected Audit Entries -->
+          </ul>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <div class="container footer-container">
+        <p>Automated Excel Data Analyst &bull; Local Autonomous Data Engineering &amp; Dashboarding</p>
+      </div>
+    </footer>
+  </div>
+
+  <script src="/static/script.js"></script>
+</body>
+</html>

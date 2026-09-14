@@ -1,0 +1,61 @@
+Ticket_ID,Department,Satisfaction_Level,Feedback_Channel,Priority,Rating_Score
+TKT-0001,Sales,Dissatisfied,Slack,Low,1
+TKT-0002,Support,Very Satisfied,Phone,Low,2
+TKT-0003,Product,Very Satisfied,Portal,Low,4
+TKT-0004,Engineering,Neutral,Portal,Low,2
+TKT-0005,Product,Dissatisfied,Email,Medium,4
+TKT-0006,Marketing,Neutral,Portal,Low,1
+TKT-0007,Support,Very Satisfied,Portal,Medium,1
+TKT-0008,Sales,Satisfied,Email,High,1
+TKT-0009,Engineering,Very Satisfied,Email,High,3
+TKT-0010,Sales,Very Satisfied,Portal,Low,3
+TKT-0011,Sales,Very Satisfied,Phone,Low,2
+TKT-0012,Marketing,Neutral,Email,Low,3
+TKT-0013,Engineering,Very Satisfied,Email,Medium,1
+TKT-0014,Engineering,Neutral,Phone,Medium,3
+TKT-0015,Product,Very Satisfied,Portal,High,1
+TKT-0016,Sales,Very Satisfied,Phone,Low,3
+TKT-0017,Sales,Very Satisfied,Email,Medium,2
+TKT-0018,Engineering,Neutral,Slack,High,2
+TKT-0019,Product,Neutral,Email,Low,2
+TKT-0020,Support,Neutral,Email,Medium,4
+TKT-0021,Support,Satisfied,Portal,Medium,1
+TKT-0022,Support,Dissatisfied,Phone,High,2
+TKT-0023,Support,Very Satisfied,Portal,Medium,4
+TKT-0024,Engineering,Dissatisfied,Email,Medium,1
+TKT-0025,Product,Satisfied,Email,High,2
+TKT-0026,Marketing,Satisfied,Slack,Low,3
+TKT-0027,Sales,Satisfied,Slack,Low,5
+TKT-0028,Product,Satisfied,Phone,Low,3
+TKT-0029,Marketing,Very Satisfied,Slack,High,5
+TKT-0030,Product,Dissatisfied,Email,Low,1
+TKT-0031,Sales,Satisfied,Email,Low,4
+TKT-0032,Product,Very Satisfied,Slack,High,3
+TKT-0033,Product,Satisfied,Phone,Medium,2
+TKT-0034,Marketing,Satisfied,Slack,High,1
+TKT-0035,Engineering,Very Satisfied,Slack,Low,1
+TKT-0036,Engineering,Very Satisfied,Phone,Low,2
+TKT-0037,Product,Very Satisfied,Email,Low,4
+TKT-0038,Support,Satisfied,Email,Medium,1
+TKT-0039,Marketing,Dissatisfied,Portal,High,5
+TKT-0040,Support,Very Satisfied,Slack,Medium,3
+TKT-0041,Sales,Very Satisfied,Slack,High,1
+TKT-0042,Sales,Neutral,Phone,Medium,5
+TKT-0043,Product,Satisfied,Portal,Low,1
+TKT-0044,Engineering,Neutral,Phone,Medium,1
+TKT-0045,Product,Neutral,Slack,Low,2
+TKT-0046,Sales,Satisfied,Email,Low,3
+TKT-0047,Product,Dissatisfied,Email,Low,1
+TKT-0048,Engineering,Dissatisfied,Slack,High,2
+TKT-0049,Support,Very Satisfied,Phone,Low,3
+TKT-0050,Marketing,Very Satisfied,Email,Low,1
+TKT-0051,Sales,Dissatisfied,Slack,High,1
+TKT-0052,Product,Neutral,Portal,Medium,4
+TKT-0053,Support,Very Satisfied,Phone,Medium,2
+TKT-0054,Product,Dissatisfied,Phone,High,4
+TKT-0055,Product,Very Satisfied,Email,Medium,5
+TKT-0056,Product,Neutral,Slack,Low,2
+TKT-0057,Support,Very Satisfied,Email,High,3
+TKT-0058,Marketing,Very Satisfied,Portal,Low,1
+TKT-0059,Product,Neutral,Email,High,5
+TKT-0060,Sales,Dissatisfied,Portal,Low,4
