@@ -5,6 +5,10 @@
  */
 
 document.addEventListener('DOMContentLoaded', () => {
+
+  // Render backend URL
+  const API_BASE_URL = 'https://automated-excel-data-analyst.onrender.com';
+
   // DOM Elements
   const dropZone = document.getElementById('dropZone');
   const fileInput = document.getElementById('fileInput');
@@ -59,9 +63,11 @@ document.addEventListener('DOMContentLoaded', () => {
   // Helper: Format bytes
   function formatBytes(bytes) {
     if (bytes === 0) return '0 Bytes';
+
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
+
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   }
 
@@ -69,6 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function showAlert(title, message, isError = true) {
     alertTitle.textContent = title;
     alertMessage.textContent = message;
+
     if (isError) {
       alertBox.style.backgroundColor = '#fef2f2';
       alertBox.style.borderColor = '#fecaca';
@@ -78,8 +85,12 @@ document.addEventListener('DOMContentLoaded', () => {
       alertBox.style.borderColor = '#a7f3d0';
       alertBox.style.color = '#065f46';
     }
+
     alertBox.classList.remove('hidden');
-    alertBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    alertBox.scrollIntoView({
+      behavior: 'smooth',
+      block: 'nearest'
+    });
   }
 
   function hideAlert() {
@@ -91,28 +102,43 @@ document.addEventListener('DOMContentLoaded', () => {
   // File Selection Handler
   function handleFileSelected(file) {
     hideAlert();
+
     if (!file) return;
 
     const ext = file.name.slice(file.name.lastIndexOf('.')).toLowerCase();
+
     if (ext !== '.xlsx' && ext !== '.csv') {
-      showAlert('Unsupported File Type', 'Please select a valid Microsoft Excel (.xlsx) or CSV (.csv) file.');
+      showAlert(
+        'Unsupported File Type',
+        'Please select a valid Microsoft Excel (.xlsx) or CSV (.csv) file.'
+      );
+
       clearSelectedFile();
       return;
     }
 
     if (file.size === 0) {
-      showAlert('Empty File', 'The selected file is 0 bytes.');
+      showAlert(
+        'Empty File',
+        'The selected file is 0 bytes.'
+      );
+
       clearSelectedFile();
       return;
     }
 
     if (file.size > 100 * 1024 * 1024) {
-      showAlert('File Too Large', 'File exceeds the maximum allowable limit of 100 MB.');
+      showAlert(
+        'File Too Large',
+        'File exceeds the maximum allowable limit of 100 MB.'
+      );
+
       clearSelectedFile();
       return;
     }
 
     currentFile = file;
+
     fileNameLabel.textContent = file.name;
     fileSizeLabel.textContent = formatBytes(file.size);
     fileTypeBadge.textContent = ext.replace('.', '').toUpperCase();
@@ -124,14 +150,20 @@ document.addEventListener('DOMContentLoaded', () => {
   function clearSelectedFile() {
     currentFile = null;
     fileInput.value = '';
+
     fileDetailsBar.classList.add('hidden');
     analyzeBtn.setAttribute('disabled', 'true');
   }
 
   // File Input Listeners
-  browseBtn.addEventListener('click', () => fileInput.click());
+  browseBtn.addEventListener('click', () => {
+    fileInput.click();
+  });
+
   dropZone.addEventListener('click', (e) => {
-    if (e.target !== browseBtn) fileInput.click();
+    if (e.target !== browseBtn) {
+      fileInput.click();
+    }
   });
 
   fileInput.addEventListener('change', (e) => {
@@ -147,85 +179,136 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Drag & Drop
   ['dragenter', 'dragover'].forEach(eventName => {
-    dropZone.addEventListener(eventName, (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      dropZone.classList.add('dragover');
-    }, false);
+
+    dropZone.addEventListener(
+      eventName,
+      (e) => {
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        dropZone.classList.add('dragover');
+
+      },
+      false
+    );
+
   });
 
   ['dragleave', 'drop'].forEach(eventName => {
-    dropZone.addEventListener(eventName, (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      dropZone.classList.remove('dragover');
-    }, false);
+
+    dropZone.addEventListener(
+      eventName,
+      (e) => {
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        dropZone.classList.remove('dragover');
+
+      },
+      false
+    );
+
   });
 
   dropZone.addEventListener('drop', (e) => {
+
     const dt = e.dataTransfer;
+
     if (dt.files && dt.files.length > 0) {
       handleFileSelected(dt.files[0]);
     }
+
   });
 
   // Stepper Controller
   function startProgressStepper() {
+
     loadingCard.classList.remove('hidden');
     resultsSection.classList.add('hidden');
+
     analyzeBtn.setAttribute('disabled', 'true');
 
     // Reset step styles
     for (let i = 1; i <= 5; i++) {
+
       const stepEl = document.getElementById(`step${i}`);
+
       stepEl.classList.remove('active', 'completed');
+
     }
 
     let currentIndex = 0;
+
     const updateStepUI = (index) => {
+
       const item = steps[index];
+
       loadingStepText.textContent = item.text;
+
       for (let i = 1; i <= 5; i++) {
+
         const stepEl = document.getElementById(`step${i}`);
+
         if (i < item.step) {
+
           stepEl.classList.remove('active');
           stepEl.classList.add('completed');
+
         } else if (i === item.step) {
+
           stepEl.classList.add('active');
           stepEl.classList.remove('completed');
+
         } else {
+
           stepEl.classList.remove('active', 'completed');
+
         }
       }
     };
 
     updateStepUI(0);
+
     stepperInterval = setInterval(() => {
+
       if (currentIndex < steps.length - 1) {
+
         currentIndex++;
         updateStepUI(currentIndex);
+
       }
+
     }, 1500);
+
   }
 
   function stopProgressStepper() {
+
     clearInterval(stepperInterval);
+
     loadingCard.classList.add('hidden');
+
     analyzeBtn.removeAttribute('disabled');
+
   }
 
   // Analyze Action
   analyzeBtn.addEventListener('click', async () => {
+
     if (!currentFile) return;
 
     hideAlert();
     startProgressStepper();
 
     const formData = new FormData();
+
     formData.append('file', currentFile);
 
     try {
-      const response = await fetch('/analyze', {
+
+      const response = await fetch(`${API_BASE_URL}/analyze`, {
         method: 'POST',
         body: formData
       });
@@ -235,8 +318,19 @@ document.addEventListener('DOMContentLoaded', () => {
       stopProgressStepper();
 
       if (!response.ok || data.status !== 'success') {
-        const errorMsg = data.detail || data.error || data.message || 'Data analysis failed.';
-        showAlert('Analysis Error', errorMsg, true);
+
+        const errorMsg =
+          data.detail ||
+          data.error ||
+          data.message ||
+          'Data analysis failed.';
+
+        showAlert(
+          'Analysis Error',
+          errorMsg,
+          true
+        );
+
         return;
       }
 
@@ -244,95 +338,236 @@ document.addEventListener('DOMContentLoaded', () => {
       renderResults(data);
 
     } catch (err) {
+
+      console.error(err);
+
       stopProgressStepper();
-      showAlert('Network/Server Error', 'Failed to connect to the analysis backend. Please verify the server is running.', true);
+
+      showAlert(
+        'Network/Server Error',
+        'Failed to connect to the analysis backend. Please try again.',
+        true
+      );
+
     }
+
   });
 
   // Render Pipeline Results
   function renderResults(res) {
-    resultFileTitle.textContent = `${res.original_filename} Analysis`;
-    metaFileType.textContent = `Type: ${res.input_type || 'Spreadsheet'}`;
-    metaSheetName.textContent = `Sheet: ${res.selected_sheet || 'Raw Data'}`;
-    metaChartsCount.textContent = `Charts: ${res.charts_generated || 0} Native Charts`;
 
-    downloadBtn.href = res.download_url;
-    downloadBtn.setAttribute('download', res.output_filename);
+    resultFileTitle.textContent =
+      `${res.original_filename} Analysis`;
+
+    metaFileType.textContent =
+      `Type: ${res.input_type || 'Spreadsheet'}`;
+
+    metaSheetName.textContent =
+      `Sheet: ${res.selected_sheet || 'Raw Data'}`;
+
+    metaChartsCount.textContent =
+      `Charts: ${res.charts_generated || 0} Native Charts`;
+
+    // Download link from Render backend
+    if (res.download_url) {
+
+      if (res.download_url.startsWith('http')) {
+        downloadBtn.href = res.download_url;
+      } else {
+        downloadBtn.href = `${API_BASE_URL}${res.download_url}`;
+      }
+
+    }
+
+    downloadBtn.setAttribute(
+      'download',
+      res.output_filename
+    );
 
     // KPI Cards
     kpiCardsContainer.innerHTML = '';
+
     const kpis = res.kpis || [];
+
     kpis.forEach(kpi => {
+
       const card = document.createElement('div');
+
       card.className = 'kpi-card';
+
       card.innerHTML = `
         <div class="kpi-top-row">
-          <span class="kpi-label">${escapeHtml(kpi.label)}</span>
-          <span class="kpi-badge">${escapeHtml(kpi.aggregation || 'metric')}</span>
+          <span class="kpi-label">
+            ${escapeHtml(kpi.label)}
+          </span>
+
+          <span class="kpi-badge">
+            ${escapeHtml(kpi.aggregation || 'metric')}
+          </span>
         </div>
-        <div class="kpi-value">${escapeHtml(kpi.formatted_value || String(kpi.value))}</div>
+
+        <div class="kpi-value">
+          ${escapeHtml(
+            kpi.formatted_value ||
+            String(kpi.value)
+          )}
+        </div>
       `;
+
       kpiCardsContainer.appendChild(card);
+
     });
 
     // Summary Stats
     const cleanRep = res.cleaning_report || {};
     const valRep = res.validation_report || {};
-    statOrigRows.textContent = (cleanRep.original_rows || valRep.total_rows || 0).toLocaleString();
-    statCleanRows.textContent = (cleanRep.cleaned_rows || 0).toLocaleString();
-    statCols.textContent = (cleanRep.cleaned_columns || valRep.total_columns || 0).toLocaleString();
-    statDupes.textContent = (cleanRep.duplicates_removed || 0).toLocaleString();
 
-    statNullsBefore.textContent = (cleanRep.missing_values_before || 0).toLocaleString();
-    statNullsAfter.textContent = `${(cleanRep.missing_values_after || 0).toLocaleString()} (Cleaned/Imputed)`;
+    statOrigRows.textContent =
+      (
+        cleanRep.original_rows ||
+        valRep.total_rows ||
+        0
+      ).toLocaleString();
 
-    const preservedIds = cleanRep.preserved_id_columns || [];
-    statPreservedIds.textContent = preservedIds.length > 0 ? preservedIds.join(', ') : 'None';
+    statCleanRows.textContent =
+      (
+        cleanRep.cleaned_rows ||
+        0
+      ).toLocaleString();
+
+    statCols.textContent =
+      (
+        cleanRep.cleaned_columns ||
+        valRep.total_columns ||
+        0
+      ).toLocaleString();
+
+    statDupes.textContent =
+      (
+        cleanRep.duplicates_removed ||
+        0
+      ).toLocaleString();
+
+    statNullsBefore.textContent =
+      (
+        cleanRep.missing_values_before ||
+        0
+      ).toLocaleString();
+
+    statNullsAfter.textContent =
+      `${(
+        cleanRep.missing_values_after ||
+        0
+      ).toLocaleString()} (Cleaned/Imputed)`;
+
+    const preservedIds =
+      cleanRep.preserved_id_columns || [];
+
+    statPreservedIds.textContent =
+      preservedIds.length > 0
+        ? preservedIds.join(', ')
+        : 'None';
 
     // Charts
     chartsContainer.innerHTML = '';
-    const charts = res.selected_charts || [];
+
+    const charts =
+      res.selected_charts || [];
+
     charts.forEach(chart => {
-      const cEl = document.createElement('div');
-      cEl.className = 'chart-card';
+
+      const cEl =
+        document.createElement('div');
+
+      cEl.className =
+        'chart-card';
+
       cEl.innerHTML = `
         <div class="chart-card-header">
-          <span class="chart-type-tag">${escapeHtml(chart.chart_type)}</span>
+
+          <span class="chart-type-tag">
+            ${escapeHtml(chart.chart_type)}
+          </span>
+
         </div>
-        <h4 class="chart-card-title">${escapeHtml(chart.title)}</h4>
-        <p class="chart-card-desc">${escapeHtml(chart.description || '')}</p>
+
+        <h4 class="chart-card-title">
+          ${escapeHtml(chart.title)}
+        </h4>
+
+        <p class="chart-card-desc">
+          ${escapeHtml(
+            chart.description || ''
+          )}
+        </p>
       `;
+
       chartsContainer.appendChild(cEl);
+
     });
 
     // Audit Log
     auditList.innerHTML = '';
-    const actions = cleanRep.major_actions || [];
+
+    const actions =
+      cleanRep.major_actions || [];
+
     if (actions.length > 0) {
+
       actions.forEach(act => {
-        const li = document.createElement('li');
-        li.className = 'audit-item';
+
+        const li =
+          document.createElement('li');
+
+        li.className =
+          'audit-item';
+
         li.textContent = act;
+
         auditList.appendChild(li);
+
       });
+
     } else {
-      const li = document.createElement('li');
-      li.className = 'audit-item';
-      li.textContent = 'Standardized column headers and validated cell formatting.';
+
+      const li =
+        document.createElement('li');
+
+      li.className =
+        'audit-item';
+
+      li.textContent =
+        'Standardized column headers and validated cell formatting.';
+
       auditList.appendChild(li);
+
     }
 
     resultsSection.classList.remove('hidden');
-    resultsSection.scrollIntoView({ behavior: 'smooth' });
+
+    resultsSection.scrollIntoView({
+      behavior: 'smooth'
+    });
+
   }
 
+  // Prevent HTML injection
   function escapeHtml(str) {
-    if (str === null || str === undefined) return '';
+
+    if (
+      str === null ||
+      str === undefined
+    ) {
+      return '';
+    }
+
     return String(str)
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#039;');
+
   }
+
 });
