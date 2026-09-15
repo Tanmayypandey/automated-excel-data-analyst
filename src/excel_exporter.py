@@ -1,24 +1,42 @@
-"""Excel Exporter Module.
+"""Optimized Excel Exporter Module.
 
-Constructs the complete 5-sheet professional .xlsx workbook:
-1. Dashboard (KPIs, native charts, dataset summary)
-2. Cleaned Data (standardized, typed, imputed tabular records)
-3. Cleaning Report (transformation audit trail)
-4. Original Data (raw untouched dataset)
-5. Chart Data (source aggregations for native Excel charts)
+Creates a professional Excel report while remaining efficient for
+medium and large datasets.
+
+Sheets:
+1. Dashboard
+2. Cleaned Data
+3. Cleaning Report
+4. Original Data
+5. Chart Data
 """
 
 import os
-from typing import Dict, Any, List, Tuple
+from typing import Dict, Any, List
+
 import pandas as pd
 import numpy as np
 import openpyxl
+
 from openpyxl.worksheet.worksheet import Worksheet
-from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.utils import get_column_letter
 
 from src.cleaning_report_generator import populate_cleaning_report
 from src.dashboard_generator import build_dashboard
+
+
+# ---------------------------------------------------------
+# EXPORT LIMITS
+# ---------------------------------------------------------
+
+# Full cleaned dataset can be exported up to this limit.
+MAX_CLEANED_EXPORT_ROWS = 100_000
+
+# Raw data is useful for comparison, but duplicating 100k+
+# rows makes the workbook unnecessarily heavy.
+FULL_RAW_EXPORT_THRESHOLD = 50_000
+RAW_PREVIEW_ROWS = 5_000
 
 
 def export_excel_report(
@@ -29,55 +47,144 @@ def export_excel_report(
     chart_specs: List[Dict[str, Any]],
     output_file_path: str
 ) -> str:
-    """Generate and save the master 5-sheet Excel workbook.
+    """Generate optimized Excel analysis workbook."""
 
-    Args:
-        raw_df: Raw original dataset before cleaning.
-        cleaned_df: Cleaned and standardized dataset.
-        cleaning_stats: Dictionary containing cleaning metrics and audit log.
-        kpis: Selected KPIs list.
-        chart_specs: Selected charts specification list.
-        output_file_path: Destination path for final .xlsx file.
+    output_file_path = os.path.abspath(output_file_path)
 
-    Returns:
-        Absolute path to the saved Excel workbook.
-    """
-    os.makedirs(os.path.dirname(os.path.abspath(output_file_path)), exist_ok=True)
+    os.makedirs(
+        os.path.dirname(output_file_path),
+        exist_ok=True
+    )
 
     wb = openpyxl.Workbook()
-    # Default sheet
-    ws_default = wb.active
 
-    # Create sheets in desired order
-    ws_dashboard = ws_default
+    # -----------------------------------------------------
+    # CREATE SHEETS
+    # -----------------------------------------------------
+
+    ws_dashboard = wb.active
     ws_dashboard.title = "Dashboard"
 
-    ws_cleaned = wb.create_sheet(title="Cleaned Data")
-    ws_report = wb.create_sheet(title="Cleaning Report")
-    ws_original = wb.create_sheet(title="Original Data")
-    ws_chart_data = wb.create_sheet(title="Chart Data")
+    ws_cleaned = wb.create_sheet("Cleaned Data")
+    ws_report = wb.create_sheet("Cleaning Report")
+    ws_original = wb.create_sheet("Original Data")
+    ws_chart_data = wb.create_sheet("Chart Data")
 
-    # 1. Populate Original Data Table
-    _write_dataframe_table(ws_original, raw_df, "Original Data (Raw Upload)")
+    # -----------------------------------------------------
+    # ORIGINAL DATA
+    # -----------------------------------------------------
 
-    # 2. Populate Cleaned Data Table
-    _write_dataframe_table(ws_cleaned, cleaned_df, "Cleaned & Standardized Data")
+    if len(raw_df) <= FULL_RAW_EXPORT_THRESHOLD:
 
-    # 3. Populate Cleaning Report
-    populate_cleaning_report(ws_report, cleaning_stats)
+        raw_export_df = raw_df
 
-    # 4. Prepare and Populate Chart Data
-    chart_ranges = _populate_chart_data(ws_chart_data, cleaned_df, chart_specs)
+        original_title = (
+            f"Original Data — {len(raw_df):,} rows"
+        )
 
-    # 5. Build Dashboard Sheet
+    else:
+
+        raw_export_df = raw_df.head(RAW_PREVIEW_ROWS)
+
+        original_title = (
+            f"Original Data Preview — first "
+            f"{RAW_PREVIEW_ROWS:,} of {len(raw_df):,} rows"
+        )
+
+    _write_dataframe_fast(
+        ws_original,
+        raw_export_df,
+        original_title
+    )
+
+    # Free reference as soon as possible.
+    del raw_export_df
+
+    # -----------------------------------------------------
+    # CLEANED DATA
+    # -----------------------------------------------------
+
+    cleaned_rows_to_export = min(
+        len(cleaned_df),
+        MAX_CLEANED_EXPORT_ROWS
+    )
+
+    cleaned_export_df = cleaned_df.iloc[
+        :cleaned_rows_to_export
+    ]
+
+    if len(cleaned_df) > MAX_CLEANED_EXPORT_ROWS:
+
+        cleaned_title = (
+            f"Cleaned Data — first "
+            f"{MAX_CLEANED_EXPORT_ROWS:,} of "
+            f"{len(cleaned_df):,} rows"
+        )
+
+    else:
+
+        cleaned_title = (
+            f"Cleaned Data — {len(cleaned_df):,} rows"
+        )
+
+    _write_dataframe_fast(
+        ws_cleaned,
+        cleaned_export_df,
+        cleaned_title
+    )
+
+    del cleaned_export_df
+
+    # -----------------------------------------------------
+    # CLEANING REPORT
+    # -----------------------------------------------------
+
+    populate_cleaning_report(
+        ws_report,
+        cleaning_stats
+    )
+
+    # -----------------------------------------------------
+    # CHART DATA
+    # -----------------------------------------------------
+
+    chart_ranges = _populate_chart_data(
+        ws_chart_data,
+        cleaned_df,
+        chart_specs
+    )
+
+    # -----------------------------------------------------
+    # DATASET SUMMARY
+    # -----------------------------------------------------
+
     dataset_summary = {
         "total_rows": len(cleaned_df),
         "total_columns": len(cleaned_df.columns),
-        "duplicate_rows": cleaning_stats.get("duplicates_removed", 0),
-        "missing_values_cleaned": (
-            cleaning_stats.get("missing_values_before", 0) - cleaning_stats.get("missing_values_after", 0)
+
+        "duplicate_rows":
+            cleaning_stats.get(
+                "duplicates_removed",
+                0
+            ),
+
+        "missing_values_cleaned": max(
+            0,
+            cleaning_stats.get(
+                "missing_values_before",
+                0
+            )
+            -
+            cleaning_stats.get(
+                "missing_values_after",
+                0
+            )
         )
     }
+
+    # -----------------------------------------------------
+    # DASHBOARD
+    # -----------------------------------------------------
 
     build_dashboard(
         ws_dash=ws_dashboard,
@@ -88,165 +195,541 @@ def export_excel_report(
         dataset_summary=dataset_summary
     )
 
-    # Save workbook
+    # Hide chart data because end users normally
+    # don't need to see chart aggregation tables.
+    ws_chart_data.sheet_state = "hidden"
+
+    # -----------------------------------------------------
+    # SAVE
+    # -----------------------------------------------------
+
     wb.save(output_file_path)
     wb.close()
 
-    return os.path.abspath(output_file_path)
+    return output_file_path
 
 
-def _write_dataframe_table(ws: Worksheet, df: pd.DataFrame, title: str) -> None:
-    """Format and write pandas DataFrame into worksheet with clean headers."""
-    ws.views.sheetView[0].showGridLines = True
+# =========================================================
+# FAST DATAFRAME WRITER
+# =========================================================
 
-    header_fill = PatternFill(start_color="1E293B", end_color="1E293B", fill_type="solid")
-    header_font = Font(name="Segoe UI", size=10, bold=True, color="FFFFFF")
-    cell_font = Font(name="Segoe UI", size=9, color="334155")
-    alt_fill = PatternFill(start_color="F8FAFC", end_color="F8FAFC", fill_type="solid")
+def _excel_safe_value(value):
+    """Convert pandas/numpy values into Excel-safe Python values."""
 
-    thin_border = Border(
-        left=Side(style="thin", color="E2E8F0"),
-        right=Side(style="thin", color="E2E8F0"),
-        top=Side(style="thin", color="E2E8F0"),
-        bottom=Side(style="thin", color="E2E8F0")
+    if value is None:
+        return None
+
+    try:
+        if pd.isna(value):
+            return None
+    except (TypeError, ValueError):
+        pass
+
+    if isinstance(value, pd.Timestamp):
+        return value.to_pydatetime()
+
+    if isinstance(value, np.datetime64):
+        try:
+            return pd.Timestamp(value).to_pydatetime()
+        except Exception:
+            return str(value)
+
+    if isinstance(value, np.integer):
+        return int(value)
+
+    if isinstance(value, np.floating):
+        return float(value)
+
+    if isinstance(value, np.bool_):
+        return bool(value)
+
+    # Excel cannot store timezone-aware datetimes.
+    if hasattr(value, "tzinfo") and value.tzinfo is not None:
+        return str(value)
+
+    return value
+
+
+def _write_dataframe_fast(
+    ws: Worksheet,
+    df: pd.DataFrame,
+    title: str
+) -> None:
+    """Write DataFrame efficiently.
+
+    Important performance improvement:
+    Data rows are NOT individually styled.
+
+    Only title/header rows receive styling.
+    """
+
+    ws.sheet_view.showGridLines = True
+
+    # -----------------------------------------------------
+    # TITLE
+    # -----------------------------------------------------
+
+    number_of_columns = max(
+        len(df.columns),
+        1
     )
 
-    # Write column headers
-    cols = list(df.columns)
-    for c_idx, col_name in enumerate(cols, start=1):
-        cell = ws.cell(row=1, column=c_idx, value=str(col_name))
+    ws.merge_cells(
+        start_row=1,
+        start_column=1,
+        end_row=1,
+        end_column=number_of_columns
+    )
+
+    title_cell = ws.cell(
+        row=1,
+        column=1,
+        value=title
+    )
+
+    title_cell.font = Font(
+        name="Segoe UI",
+        size=11,
+        bold=True
+    )
+
+    title_cell.alignment = Alignment(
+        vertical="center"
+    )
+
+    # -----------------------------------------------------
+    # HEADER
+    # -----------------------------------------------------
+
+    header_fill = PatternFill(
+        start_color="1E293B",
+        end_color="1E293B",
+        fill_type="solid"
+    )
+
+    header_font = Font(
+        name="Segoe UI",
+        size=10,
+        bold=True,
+        color="FFFFFF"
+    )
+
+    for column_index, column_name in enumerate(
+        df.columns,
+        start=1
+    ):
+
+        cell = ws.cell(
+            row=2,
+            column=column_index,
+            value=str(column_name)
+        )
+
         cell.font = header_font
         cell.fill = header_fill
-        cell.alignment = Alignment(horizontal="center", vertical="center")
-        cell.border = thin_border
 
-    # Write rows (limit to 100,000 for excel performance)
-    max_export_rows = min(len(df), 100000)
-    for r_idx, row in enumerate(df.iloc[:max_export_rows].itertuples(index=False), start=2):
-        use_alt = (r_idx % 2 == 1)
-        for c_idx, val in enumerate(row, start=1):
-            cell = ws.cell(row=r_idx, column=c_idx)
-            # Format datetime if applicable
-            if isinstance(val, (pd.Timestamp, np.datetime64)):
-                cell.value = str(val)[:19]
-            elif pd.isna(val):
-                cell.value = ""
-            else:
-                cell.value = val
+        cell.alignment = Alignment(
+            horizontal="center",
+            vertical="center"
+        )
 
-            cell.font = cell_font
-            cell.border = thin_border
-            if use_alt:
-                cell.fill = alt_fill
+    # -----------------------------------------------------
+    # DATA
+    # -----------------------------------------------------
 
-    # Adjust column widths
-    for c_idx, col_name in enumerate(cols, start=1):
-        max_len = max(len(str(col_name)), 10)
-        c_letter = get_column_letter(c_idx)
-        ws.column_dimensions[c_letter].width = min(max_len + 5, 40)
+    # ws.append is significantly lighter than constructing
+    # and styling every individual cell.
+    for row in df.itertuples(
+        index=False,
+        name=None
+    ):
 
+        ws.append([
+            _excel_safe_value(value)
+            for value in row
+        ])
+
+    # -----------------------------------------------------
+    # WORKSHEET SETTINGS
+    # -----------------------------------------------------
+
+    ws.freeze_panes = "A3"
+
+    if len(df.columns) > 0:
+        ws.auto_filter.ref = (
+            f"A2:"
+            f"{get_column_letter(len(df.columns))}"
+            f"{len(df) + 2}"
+        )
+
+    # Width is based only on column names.
+    # Do NOT scan entire columns for width calculation.
+    for column_index, column_name in enumerate(
+        df.columns,
+        start=1
+    ):
+
+        width = min(
+            max(
+                len(str(column_name)) + 4,
+                12
+            ),
+            30
+        )
+
+        ws.column_dimensions[
+            get_column_letter(column_index)
+        ].width = width
+
+
+# =========================================================
+# CHART DATA
+# =========================================================
 
 def _populate_chart_data(
     ws: Worksheet,
     df: pd.DataFrame,
     chart_specs: List[Dict[str, Any]]
 ) -> List[Dict[str, Any]]:
-    """Generate aggregated tables in Chart Data worksheet and return cell ranges."""
-    ws.views.sheetView[0].showGridLines = True
-    header_fill = PatternFill(start_color="3B82F6", end_color="3B82F6", fill_type="solid")
-    header_font = Font(name="Segoe UI", size=9, bold=True, color="FFFFFF")
-    cell_font = Font(name="Segoe UI", size=9, color="334155")
+    """Create small aggregated tables used by dashboard charts."""
+
+    ws.sheet_view.showGridLines = True
+
+    header_fill = PatternFill(
+        start_color="3B82F6",
+        end_color="3B82F6",
+        fill_type="solid"
+    )
+
+    header_font = Font(
+        name="Segoe UI",
+        size=9,
+        bold=True,
+        color="FFFFFF"
+    )
 
     ranges: List[Dict[str, Any]] = []
-    # Layout up to 4 tables side by side (Cols 1-2, 4-5, 7-8, 10-11)
-    col_offsets = [(1, 2), (4, 5), (7, 8), (10, 11)]
 
-    for idx, spec in enumerate(chart_specs[:4]):
-        cat_c, val_c = col_offsets[idx]
-        c_type = spec.get("chart_type", "bar")
+    column_offsets = [
+        (1, 2),
+        (4, 5),
+        (7, 8),
+        (10, 11)
+    ]
+
+    for index, spec in enumerate(
+        chart_specs[:4]
+    ):
+
+        category_column, value_column = (
+            column_offsets[index]
+        )
+
+        chart_type = spec.get(
+            "chart_type",
+            "bar"
+        )
+
         x_col = spec.get("x_col")
         y_col = spec.get("y_col")
-        agg = spec.get("aggregation", "sum")
+
+        aggregation = spec.get(
+            "aggregation",
+            "sum"
+        )
 
         table_df = pd.DataFrame()
 
         try:
-            if c_type == "line" and x_col and y_col:
-                # Group by date
-                temp = df[[x_col, y_col]].dropna().copy()
-                temp[x_col] = pd.to_datetime(temp[x_col], errors="coerce").dt.strftime("%Y-%m-%d")
-                if agg == "mean":
-                    table_df = temp.groupby(x_col, as_index=False)[y_col].mean().sort_values(by=x_col)
+
+            # ---------------------------------------------
+            # LINE
+            # ---------------------------------------------
+
+            if (
+                chart_type == "line"
+                and x_col in df.columns
+                and y_col in df.columns
+            ):
+
+                temp = df[
+                    [x_col, y_col]
+                ].dropna()
+
+                temp = temp.copy()
+
+                temp[x_col] = pd.to_datetime(
+                    temp[x_col],
+                    errors="coerce"
+                )
+
+                temp = temp.dropna(
+                    subset=[x_col]
+                )
+
+                # Aggregate by day.
+                temp["_chart_date"] = (
+                    temp[x_col]
+                    .dt.strftime("%Y-%m-%d")
+                )
+
+                if aggregation == "mean":
+
+                    table_df = (
+                        temp.groupby(
+                            "_chart_date",
+                            as_index=False
+                        )[y_col]
+                        .mean()
+                    )
+
                 else:
-                    table_df = temp.groupby(x_col, as_index=False)[y_col].sum().sort_values(by=x_col)
-                table_df = table_df.head(30)  # max 30 time intervals for readability
 
-            elif c_type == "bar" and x_col and y_col:
-                temp = df[[x_col, y_col]].dropna().copy()
-                if "top10" in agg:
-                    if "mean" in agg:
-                        table_df = temp.groupby(x_col, as_index=False)[y_col].mean()
-                    else:
-                        table_df = temp.groupby(x_col, as_index=False)[y_col].sum()
-                    table_df = table_df.sort_values(by=y_col, ascending=False).head(10)
+                    table_df = (
+                        temp.groupby(
+                            "_chart_date",
+                            as_index=False
+                        )[y_col]
+                        .sum()
+                    )
+
+                table_df = (
+                    table_df
+                    .sort_values("_chart_date")
+                    .tail(30)
+                )
+
+            # ---------------------------------------------
+            # BAR
+            # ---------------------------------------------
+
+            elif (
+                chart_type == "bar"
+                and x_col in df.columns
+                and y_col in df.columns
+            ):
+
+                temp = df[
+                    [x_col, y_col]
+                ].dropna()
+
+                if aggregation == "mean":
+
+                    table_df = (
+                        temp.groupby(
+                            x_col,
+                            as_index=False
+                        )[y_col]
+                        .mean()
+                    )
+
                 else:
-                    if agg == "mean":
-                        table_df = temp.groupby(x_col, as_index=False)[y_col].mean()
-                    else:
-                        table_df = temp.groupby(x_col, as_index=False)[y_col].sum()
-                    table_df = table_df.sort_values(by=y_col, ascending=False).head(20)
 
-            elif c_type == "pie" and x_col and y_col:
-                temp = df[[x_col, y_col]].dropna().copy()
-                table_df = temp.groupby(x_col, as_index=False)[y_col].sum().sort_values(by=y_col, ascending=False).head(6)
+                    table_df = (
+                        temp.groupby(
+                            x_col,
+                            as_index=False
+                        )[y_col]
+                        .sum()
+                    )
 
-            elif c_type == "scatter" and x_col and y_col:
-                temp = df[[x_col, y_col]].dropna().copy()
-                # Sample up to 100 rows for scatter readability
+                limit = (
+                    10
+                    if "top10" in aggregation
+                    else 20
+                )
+
+                table_df = (
+                    table_df
+                    .sort_values(
+                        y_col,
+                        ascending=False
+                    )
+                    .head(limit)
+                )
+
+            # ---------------------------------------------
+            # PIE
+            # ---------------------------------------------
+
+            elif (
+                chart_type == "pie"
+                and x_col in df.columns
+                and y_col in df.columns
+            ):
+
+                temp = df[
+                    [x_col, y_col]
+                ].dropna()
+
+                table_df = (
+                    temp.groupby(
+                        x_col,
+                        as_index=False
+                    )[y_col]
+                    .sum()
+                    .sort_values(
+                        y_col,
+                        ascending=False
+                    )
+                    .head(6)
+                )
+
+            # ---------------------------------------------
+            # SCATTER
+            # ---------------------------------------------
+
+            elif (
+                chart_type == "scatter"
+                and x_col in df.columns
+                and y_col in df.columns
+            ):
+
+                temp = df[
+                    [x_col, y_col]
+                ].dropna()
+
                 if len(temp) > 100:
-                    temp = temp.sample(n=100, random_state=42)
-                table_df = temp.sort_values(by=x_col)
 
-            elif c_type == "histogram" and x_col:
-                series = df[x_col].dropna()
-                counts, bin_edges = np.histogram(series, bins=8)
-                bin_labels = [f"{bin_edges[i]:.1f}-{bin_edges[i+1]:.1f}" for i in range(len(counts))]
-                table_df = pd.DataFrame({"Interval": bin_labels, "Frequency": counts})
+                    temp = temp.sample(
+                        n=100,
+                        random_state=42
+                    )
+
+                table_df = temp.sort_values(
+                    x_col
+                )
+
+            # ---------------------------------------------
+            # HISTOGRAM
+            # ---------------------------------------------
+
+            elif (
+                chart_type == "histogram"
+                and x_col in df.columns
+            ):
+
+                series = pd.to_numeric(
+                    df[x_col],
+                    errors="coerce"
+                ).dropna()
+
+                if len(series) > 0:
+
+                    counts, bin_edges = np.histogram(
+                        series,
+                        bins=8
+                    )
+
+                    labels = [
+                        f"{bin_edges[i]:.1f}-"
+                        f"{bin_edges[i + 1]:.1f}"
+
+                        for i in range(
+                            len(counts)
+                        )
+                    ]
+
+                    table_df = pd.DataFrame({
+                        "Interval": labels,
+                        "Frequency": counts
+                    })
 
         except Exception:
-            # Fallback table if aggregation failed
-            table_df = pd.DataFrame({"Category": ["Sample"], "Value": [1]})
 
-        if len(table_df) == 0:
-            table_df = pd.DataFrame({"Category": ["No Data"], "Value": [0]})
+            table_df = pd.DataFrame({
+                "Category": ["No Data"],
+                "Value": [0]
+            })
 
-        # Write table into worksheet
-        headers = list(table_df.columns)
-        c1_cell = ws.cell(row=1, column=cat_c, value=str(headers[0]))
-        c1_cell.font = header_font
-        c1_cell.fill = header_fill
+        # ---------------------------------------------
+        # FALLBACK
+        # ---------------------------------------------
 
-        c2_cell = ws.cell(row=1, column=val_c, value=str(headers[1]))
-        c2_cell.font = header_font
-        c2_cell.fill = header_fill
+        if table_df.empty:
 
-        for r_offset, (k, v) in enumerate(zip(table_df.iloc[:, 0], table_df.iloc[:, 1]), start=2):
-            cell_k = ws.cell(row=r_offset, column=cat_c, value=str(k))
-            cell_k.font = cell_font
+            table_df = pd.DataFrame({
+                "Category": ["No Data"],
+                "Value": [0]
+            })
 
-            cell_v = ws.cell(row=r_offset, column=val_c, value=float(v) if isinstance(v, (int, float, np.number)) else str(v))
-            cell_v.font = cell_font
+        # Excel dashboard expects two columns.
+        if len(table_df.columns) < 2:
 
-        end_r = 1 + len(table_df)
+            table_df["Value"] = 0
+
+        table_df = table_df.iloc[:, :2]
+
+        # ---------------------------------------------
+        # WRITE CHART TABLE
+        # ---------------------------------------------
+
+        headers = list(
+            table_df.columns
+        )
+
+        first_header = ws.cell(
+            row=1,
+            column=category_column,
+            value=str(headers[0])
+        )
+
+        first_header.font = header_font
+        first_header.fill = header_fill
+
+        second_header = ws.cell(
+            row=1,
+            column=value_column,
+            value=str(headers[1])
+        )
+
+        second_header.font = header_font
+        second_header.fill = header_fill
+
+        for row_offset, row in enumerate(
+            table_df.itertuples(
+                index=False,
+                name=None
+            ),
+            start=2
+        ):
+
+            category_value = row[0]
+            numeric_value = row[1]
+
+            ws.cell(
+                row=row_offset,
+                column=category_column,
+                value=str(category_value)
+            )
+
+            ws.cell(
+                row=row_offset,
+                column=value_column,
+                value=_excel_safe_value(
+                    numeric_value
+                )
+            )
+
+        end_row = len(table_df) + 1
+
         ranges.append({
-            "cat_col": cat_c,
-            "val_col": val_c,
+            "cat_col": category_column,
+            "val_col": value_column,
             "start_row": 1,
-            "end_row": end_r
+            "end_row": end_row
         })
 
-        # Set column width
-        ws.column_dimensions[get_column_letter(cat_c)].width = 16
-        ws.column_dimensions[get_column_letter(val_c)].width = 14
+        ws.column_dimensions[
+            get_column_letter(
+                category_column
+            )
+        ].width = 18
+
+        ws.column_dimensions[
+            get_column_letter(
+                value_column
+            )
+        ].width = 14
 
     return ranges
