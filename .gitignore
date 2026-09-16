@@ -1,15 +1,20 @@
-# Python Cache
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
-env/
+
+# Virtual Environments
 venv/
+env/
 ENV/
+.venv/
+
+# Build / Package Files
 build/
-develop-eggs/
 dist/
+develop-eggs/
 downloads/
 eggs/
 .eggs/
@@ -23,28 +28,35 @@ wheels/
 .installed.cfg
 *.egg
 
-# Data Files (allow test_data)
-data/input/*
-!data/input/.gitkeep
-data/output/*
-!data/output/.gitkeep
-
-# Testing & IDEs
-.pytest_cache/
-.coverage
-htmlcov/
-.idea/
-.vscode/
-*.swp
-*.swo
-.DS_Store
-
 # Environment Variables / Secrets
 .env
 .env.*
 !.env.example
 
+# Uploaded & Generated Data
+data/input/*
+data/output/*
+
+# Keep Empty Data Directories
+!data/input/.gitkeep
+!data/output/.gitkeep
+
+# Testing / Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
 # Logs & Temporary Files
 *.log
 *.tmp
 *.temp
+
+# OS Files
+.DS_Store
+Thumbs.db
