@@ -38,3 +38,13 @@ htmlcov/
 *.swp
 *.swo
 .DS_Store
+
+# Environment Variables / Secrets
+.env
+.env.*
+!.env.example
+
+# Logs & Temporary Files
+*.log
+*.tmp
+*.temp
