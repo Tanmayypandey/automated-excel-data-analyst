@@ -14,6 +14,29 @@ https://automated-excel-data-analyst.onrender.com
 > The application is deployed on Render. On the free hosting instance, the first request after a period of inactivity may take additional time while the service starts.
 
 ---
+---
+
+## Application Preview
+
+### Home & File Upload
+
+Upload Excel (`.xlsx`) or CSV (`.csv`) datasets through the web interface.
+
+![Automated Excel Data Analyst Home Page](screenshots/home-page.png)
+
+### Analysis Results
+
+After processing, the application displays dataset statistics, automatically selected KPIs, generated chart information, and the option to download the final Excel report.
+
+![Automated Data Analysis Results](screenshots/analysis-results.png)
+
+### Generated Excel Dashboard
+
+The final downloadable Excel workbook contains an executive dashboard with automatically generated KPIs and native Excel charts.
+
+![Generated Excel Dashboard](screenshots/excel-dashboard.png)
+
+---
 
 ## Project Overview
 
